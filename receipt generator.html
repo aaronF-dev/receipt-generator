@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.5.0-beta4/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.9/flatpickr.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.9/flatpickr.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold; /* Make label text bold */
+            color: #444;
+        }
+        input[type="text"], input[type="number"], select, input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f0f0f0;
+        }
+        input[type="text"]:focus, input[type="number"]:focus, select:focus, input[type="file"]:focus {
+            background-color: #e0e0e0;
+            border-color: #bbb;
+        }
+        .button-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .button {
+            padding: 12px 25px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .receipt {
+            display: none;
+            margin-top: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fff;
+            position: relative;
+        }
+        .receipt-header {
+            display: flex;
+            align-items: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .receipt-header img {
+            width: 100px;
+            height: auto;
+            margin-right: 20px;
+        }
+        .receipt-header .receipt-title {
+            flex-grow: 1;
+            text-align: center;
+            font-size: 30px; /* Larger font size */
+            font-weight: bold; /* Bold text */
+            color: #333;
+        }
+        .receipt-header .receipt-date {
+            font-size: 14px;
+            color: #333;
+            position: absolute;
+            right: 0;
+            top: 0;
+        }
+        .receipt-content {
+            margin-bottom: 20px;
+        }
+        .receipt-content .field {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .receipt-content .field div:first-child {
+            font-weight: bold; /* Make field labels bold */
+        }
+        .receipt-content img {
+            max-width: 150px;
+            height: auto;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .receipt-footer {
+            text-align: center;
+            margin-top: 20px;
+            position: relative;
+        }
+        .print-button {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            padding: 15px 30px; /* Increased padding for larger button */
+            background-color: #007bff;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 18px; /* Increased font size */
+        }
+        .print-button:hover {
+            background-color: #0056b3;
+        }
+        .thank-you {
+            text-align: center;
+            font-size: 24px;
+            color: #007bff;
+            margin: 20px 0;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-top: 2px dashed #007bff;
+            padding-top: 10px;
+        }
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            font-size: 60px; /* Larger font size */
+            color: rgba(0, 0, 0, 0.05); /* Lighter color */
+            pointer-events: none;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Receipt Generator</h1>
+    <div class="form-group">
+        <label for="receiptNo">Receipt No.:</label>
+        <input type="text" id="receiptNo" placeholder="Enter receipt number" required>
+    </div>
+    <div class="form-group">
+        <label for="name">Name:</label>
+        <input type="text" id="name" placeholder="Enter your name" required>
+    </div>
+    <div class="form-group">
+        <label for="phone">Phone Number:</label>
+        <input type="text" id="phone" placeholder="Enter your phone number" required>
+    </div>
+    <div class="form-group">
+        <label for="address">Address:</label>
+        <input type="text" id="address" placeholder="Enter your address" required>
+    </div>
+    <div class="form-group">
+        <label for="paymentMode">Payment Mode:</label>
+        <input type="text" id="paymentMode" placeholder="Enter payment mode" required>
+    </div>
+    <div class="form-group">
+        <label for="totalAmount">Total Amount:</label>
+        <input type="number" id="totalAmount" placeholder="Enter total amount" required>
+    </div>
+    <div class="form-group">
+        <label for="expectedDelivery">Expected Delivery:</label>
+        <input type="text" id="expectedDelivery" placeholder="Select expected delivery date" required>
+    </div>
+    <div class="form-group">
+        <label for="frontside">Frontside Design:</label>
+        <input type="file" id="frontside" accept="image/*" required>
+    </div>
+    <div class="form-group">
+        <label for="backside">Backside Design:</label>
+        <input type="file" id="backside" accept="image/*" required>
+    </div>
+    <div class="form-group">
+        <label for="quantity">Quantity of Print:</label>
+        <select id="quantity" required>
+            <option value="">Select Quantity</option>
+            <option value="100">100</option>
+            <option value="200">200</option>
+            <option value="400">400</option>
+        </select>
+    </div>
+    <div class="button-container">
+        <button class="button" onclick="generateReceipt()">Generate Receipt</button>
+    </div>
+
+    <div class="receipt hidden" id="receipt">
+        <div class="watermark">Print Your Card</div>
+        <div class="receipt-header">
+            <img src="Logo/PYC Logo.jpg" width="20" height="20" alt="Company Logo" id="receipt-logo">
+            <div class="receipt-title">Receipt</div>
+            <div class="receipt-date" id="receipt-date"></div>
+        </div>
+        <div class="receipt-content">
+            <div class="field">
+                <div>Receipt No.:</div>
+                <div id="receipt-no"></div>
+            </div>
+            <div class="field">
+                <div>Name:</div>
+                <div id="receipt-name"></div>
+            </div>
+            <div class="field">
+                <div>Phone Number:</div>
+                <div id="receipt-phone"></div>
+            </div>
+            <div class="field">
+                <div>Address:</div>
+                <div id="receipt-address"></div>
+            </div>
+            <div class="field">
+                <div>Payment Mode:</div>
+                <div id="receipt-paymentMode"></div>
+            </div>
+            <div class="field">
+                <div>Total Amount:</div>
+                <div id="receipt-totalAmount"></div>
+            </div>
+            <div class="field">
+                <div>Expected Delivery:</div>
+                <div id="receipt-expectedDelivery"></div>
+            </div>
+            <div class="field">
+                <div>Frontside Design:</div>
+                <img id="receipt-frontside" src="" alt="Frontside Design">
+            </div>
+            <div class="field">
+                <div>Backside Design:</div>
+                <img id="receipt-backside" src="" alt="Backside Design">
+            </div>
+            <div class="field">
+                <div>Quantity of Print:</div>
+                <div id="receipt-quantity"></div>
+            </div>
+        </div>
+        <div class="thank-you">Thank You For Your Purchase!</div>
+        <div class="receipt-footer">
+            <a href="#" class="print-button" onclick="printReceipt()"></a>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        flatpickr("#expectedDelivery", {
+            dateFormat: "d/F/Y",
+            onChange: function(selectedDates, dateStr, instance) {
+                // Format date with suffix
+                const date = new Date(dateStr);
+                const day = date.getDate();
+                const month = date.toLocaleString('default', { month: 'long' });
+                const year = date.getFullYear();
+                const suffix = day % 10 === 1 && day !== 11 ? 'st' :
+                               day % 10 === 2 && day !== 12 ? 'nd' :
+                               day % 10 === 3 && day !== 13 ? 'rd' : 'th';
+                document.getElementById('expectedDelivery').value = `${day}${suffix} ${month} ${year}`;
+            }
+        });
+    });
+
+    function generateReceipt() {
+        // Validate form fields
+        const fields = [
+            'receiptNo',
+            'name',
+            'phone',
+            'address',
+            'paymentMode',
+            'totalAmount',
+            'expectedDelivery',
+            'frontside',
+            'backside',
+            'quantity'
+        ];
+        for (const field of fields) {
+            const element = document.getElementById(field);
+            if (!element.value || (element.type === 'file' && !element.files.length)) {
+                alert('Please fill out all fields.');
+                return;
+            }
+        }
+
+        document.getElementById('receipt-no').innerText = document.getElementById('receiptNo').value;
+        document.getElementById('receipt-name').innerText = document.getElementById('name').value;
+        document.getElementById('receipt-phone').innerText = document.getElementById('phone').value;
+        document.getElementById('receipt-address').innerText = document.getElementById('address').value;
+        document.getElementById('receipt-paymentMode').innerText = document.getElementById('paymentMode').value;
+        document.getElementById('receipt-totalAmount').innerText = document.getElementById('totalAmount').value;
+        document.getElementById('receipt-expectedDelivery').innerText = document.getElementById('expectedDelivery').value;
+        document.getElementById('receipt-quantity').innerText = document.getElementById('quantity').value;
+
+        const frontsideFile = document.getElementById('frontside').files[0];
+        const backsideFile = document.getElementById('backside').files[0];
+
+        if (frontsideFile) {
+            const readerFront = new FileReader();
+            readerFront.onload = function (e) {
+                document.getElementById('receipt-frontside').src = e.target.result;
+            };
+            readerFront.readAsDataURL(frontsideFile);
+        }
+
+        if (backsideFile) {
+            const readerBack = new FileReader();
+            readerBack.onload = function (e) {
+                document.getElementById('receipt-backside').src = e.target.result;
+            };
+            readerBack.readAsDataURL(backsideFile);
+        }
+
+        document.getElementById('receipt').style.display = 'block';
+        const today = new Date();
+        const day = String(today.getDate()).padStart(2, '0');
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const month = monthNames[today.getMonth()];
+        const year = today.getFullYear();
+        document.getElementById('receipt-date').innerText = `${day}/${month}/${year}`;
+    }
+
+    function printReceipt() {
+        const receiptContent = document.getElementById('receipt').innerHTML;
+        const originalContents = document.body.innerHTML;
+        document.body.innerHTML = receiptContent;
+        window.print();
+        document.body.innerHTML = originalContents;
+    }
+</script>
+
+</body>
+</html>
